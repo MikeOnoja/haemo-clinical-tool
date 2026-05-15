@@ -5,7 +5,7 @@ export const inputStyle: React.CSSProperties = {
   marginTop: 10,
   marginBottom: 10,
   borderRadius: 8,
-  border: "1px solid #cbd5e1",
+  border: "1px solid #313232",
   fontSize: 16,
   boxSizing: "border-box",
   fontFamily: "inherit",
