@@ -74,6 +74,7 @@ function AppContent() {
             fontSize: 16,
             boxSizing: "border-box",
             fontFamily: "inherit",
+            background: "#faf8f8",
           }}
           aria-label="Patient ID"
           type="text"

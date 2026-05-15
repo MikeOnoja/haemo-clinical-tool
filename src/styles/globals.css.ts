@@ -9,7 +9,7 @@ export const inputStyle: React.CSSProperties = {
   fontSize: 16,
   boxSizing: "border-box",
   fontFamily: "inherit",
-  background: "white",
+  background: "#faf8f8",
 };
 
 export const primaryButton: React.CSSProperties = {
