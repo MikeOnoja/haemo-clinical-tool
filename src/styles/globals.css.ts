@@ -9,6 +9,7 @@ export const inputStyle: React.CSSProperties = {
   fontSize: 16,
   boxSizing: "border-box",
   fontFamily: "inherit",
+  background: "white",
 };
 
 export const primaryButton: React.CSSProperties = {
@@ -80,4 +81,5 @@ export function injectGlobalStyles(): void {
     document.head.appendChild(style);
   }
 }
+
 
