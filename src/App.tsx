@@ -1,36 +1,62 @@
 import { useState, useEffect } from "react";
+
 import { AuthProvider } from "./components/AuthProvider";
 import { ThemeProvider, useTheme } from "./components/ThemeProvider";
 import { AlertProvider } from "./components/AlertProvider";
+
 import { Header } from "./components/Header";
 import { AlertContainer } from "./components/AlertContainer";
 import { TabNavigation } from "./components/TabNavigation";
+
 import { Factor8Calculator } from "./components/medical-modules/Factor8Calculator";
 import { PlateletDecision } from "./components/medical-modules/PlateletDecision";
 import { FFPDoseEstimator } from "./components/medical-modules/FFPDoseEstimator";
 import { INRReversal } from "./components/medical-modules/INRReversal";
 import { MTPManager } from "./components/medical-modules/MTPManager";
+
 import type { TabType } from "./utils/constants";
+
 import { injectGlobalStyles } from "./styles/globals.css";
+
+// =========================================
+// MODULE REGISTRY
+// =========================================
+
+const MODULE_REGISTRY: Record<
+  TabType,
+  React.ComponentType<{ patientId: string }>
+> = {
+  factor8: Factor8Calculator,
+  platelets: PlateletDecision,
+  ffp: FFPDoseEstimator,
+  inr: INRReversal,
+  mtp: MTPManager,
+};
 
 // =========================================
 // APP CONTENT
 // =========================================
 
 function AppContent() {
-  console.log("AppContent rendering");
   const [tab, setTab] = useState<TabType>("factor8");
   const [patientId, setPatientId] = useState("");
-  console.log("AppContent: accessing useTheme");
+
   const { themeColors } = useTheme();
-  console.log("AppContent: got themeColors", themeColors);
 
   useEffect(() => {
     injectGlobalStyles();
   }, []);
 
+  const ActiveModule = MODULE_REGISTRY[tab];
+  
+  if (!ActiveModule) {
+  return <div>Module not found</div>;
+}
+
   return (
     <div
+      className="app-container"
+      role="main"
       style={{
         background: themeColors.bg,
         color: themeColors.text,
@@ -39,8 +65,6 @@ function AppContent() {
         padding: "20px",
         boxSizing: "border-box",
       }}
-      className="app-container" // Moved styles to CSS
-      role="main"
     >
       {/* HEADER */}
       <Header />
@@ -59,7 +83,10 @@ function AppContent() {
         }}
       >
         Patient ID:
+
         <input
+          type="text"
+          aria-label="Patient ID"
           placeholder="Enter patient ID"
           value={patientId}
           onChange={(e) => setPatientId(e.target.value)}
@@ -77,15 +104,13 @@ function AppContent() {
             fontFamily: "inherit",
             background: "#faf8f8",
           }}
-          aria-label="Patient ID"
-          type="text"
         />
       </label>
 
       {/* NAVIGATION */}
       <TabNavigation activeTab={tab} onTabChange={setTab} />
 
-      {/* MAIN PANEL */}
+      {/* ACTIVE MODULE */}
       <section
         style={{
           marginTop: 20,
@@ -94,27 +119,14 @@ function AppContent() {
           borderRadius: 12,
         }}
       >
-        {/* FACTOR VIII */}
-        {tab === "factor8" && <Factor8Calculator patientId={patientId} />}
-
-        {/* PLATELETS */}
-        {tab === "platelets" && <PlateletDecision patientId={patientId} />}
-
-        {/* FFP */}
-        {tab === "ffp" && <FFPDoseEstimator patientId={patientId} />}
-
-        {/* INR */}
-        {tab === "inr" && <INRReversal patientId={patientId} />}
-
-        {/* MTP */}
-        {tab === "mtp" && <MTPManager patientId={patientId} />}
+        <ActiveModule patientId={patientId} />
       </section>
     </div>
   );
 }
 
 // =========================================
-// EXPORT APP
+// ROOT APP
 // =========================================
 
 export default function App() {

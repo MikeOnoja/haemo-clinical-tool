@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import type React from "react";
-import { supabaseService } from "../services/supabaseService";
-import type { User } from "../utils/constants";
+import { supabase } from "../services/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 interface AuthContextType {
   user: User | null;
@@ -17,19 +17,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const authUser = await supabaseService.getUser();
-        setUser(authUser);
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        setUser(user ?? null);
       } catch (error) {
-        console.error("Error fetching user:", error);
+        // Only log real unexpected errors
+        console.warn("Auth not active (normal in guest mode)");
+        setUser(null);
       } finally {
         setLoading(false);
-      }
-    };
+    }
+  };
 
     getUser();
   }, []);
 
-  return <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
@@ -39,4 +48,3 @@ export function useAuth() {
   }
   return context;
 }
-

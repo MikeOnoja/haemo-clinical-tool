@@ -1,102 +1,66 @@
-import { useState, useCallback } from "react";
-import { useSupabaseCRUD } from "../../hooks/useSupabaseCRUD";
-import { useAlertContext } from "../AlertProvider";
-import { useAuth } from "../AuthProvider";
-import { VALIDATION, CONSTANTS } from "../../utils/constants";
-import { primaryButton, inputStyle, resultStyle, spinnerStyle } from "../../styles/globals.css";
+import { useState } from "react";
+import { useFactor8 } from "../../hooks/useFactor8";
 
-interface Factor8CalculatorProps {
-  patientId: string;
-}
+export function Factor8Calculator({ patientId: _patientId }: { patientId: string }) {
+  const { result, calculate, loading } = useFactor8();
 
-export function Factor8Calculator({ patientId }: Factor8CalculatorProps) {
-  const [weight, setWeight] = useState("");
-  const [rise, setRise] = useState("");
-  const [factorDose, setFactorDose] = useState<number | null>(null);
+  const [weightKg, setWeightKg] = useState("");
+  const [currentLevel, setCurrentLevel] = useState("");
 
-  const { loading, saveCase } = useSupabaseCRUD();
-  const { addAlert } = useAlertContext();
-  const { user } = useAuth();
+  const [scenario, setScenario] = useState<
+    "no_bleed" | "minor_bleed" | "major_bleed" | "minor_surgery" | "major_surgery"
+  >("minor_bleed");
 
-  const calcFactor8 = useCallback(async () => {
-    const w = VALIDATION.parseNumeric(weight);
-    const r = VALIDATION.parseNumeric(rise);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
 
-    if (w === null || r === null) {
-      addAlert("❌ Invalid input. Please enter valid numbers.", "error", {
-        dismissible: true,
-        autoClose: false,
-      });
-      return;
-    }
-
-    const dose = w * r * CONSTANTS.FACTOR_VIII_CONSTANT;
-    setFactorDose(dose);
-
-    await saveCase(
-      "Factor VIII",
-      { weight: w, rise: r },
-      `Required Dose: ${dose.toFixed(2)} IU`,
-      user?.id || null,
-      patientId || null,
-      addAlert
-    );
-  }, [weight, rise, addAlert, user?.id, patientId, saveCase]);
+    calculate({
+      weightKg: Number(weightKg),
+      currentLevel: Number(currentLevel),
+      scenario,
+    });
+  };
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); calcFactor8(); }}>
-      <h3>Factor VIII Dose Calculator</h3>
+    <form onSubmit={handleSubmit}>
+      <h3>Factor VIII Clinical Dosing</h3>
 
-      <label style={{ display: "block", marginBottom: 8 }}>
-        Weight (kg):
-        <input
-          placeholder="e.g., 70"
-          value={weight}
-          onChange={(e) => setWeight(e.target.value)}
-          style={inputStyle}
-          type="number"
-          inputMode="decimal"
-          aria-label="Weight in kilograms"
-          required
-        />
-      </label>
+      <input
+        placeholder="Weight (kg)"
+        value={weightKg}
+        onChange={(e) => setWeightKg(e.target.value)}
+      />
 
-      <label style={{ display: "block", marginBottom: 8 }}>
-        Desired rise (%):
-        <input
-          placeholder="e.g., 100"
-          value={rise}
-          onChange={(e) => setRise(e.target.value)}
-          style={inputStyle}
-          type="number"
-          inputMode="decimal"
-          aria-label="Desired rise percentage"
-          required
-        />
-      </label>
+      <input
+        placeholder="Current FVIII level (%)"
+        value={currentLevel}
+        onChange={(e) => setCurrentLevel(e.target.value)}
+      />
 
-      <button
-        type="submit"
-        style={{ ...primaryButton, opacity: loading ? 0.7 : 1 }}
-        disabled={loading}
-        aria-busy={loading}
+      <select
+        value={scenario}
+        onChange={(e) => setScenario(e.target.value as any)}
       >
-        {loading ? (
-          <>
-            <span style={spinnerStyle} />
-            Saving...
-          </>
-        ) : (
-          "Calculate"
-        )}
+        <option value="no_bleed">No bleeding / prophylaxis</option>
+        <option value="minor_bleed">Minor bleeding</option>
+        <option value="major_bleed">Major bleeding</option>
+        <option value="minor_surgery">Minor surgery</option>
+        <option value="major_surgery">Major surgery</option>
+      </select>
+
+      <button type="submit" disabled={loading}>
+        Calculate
       </button>
 
-      {factorDose !== null && (
-        <div style={resultStyle} role="status">
-          ✅ Required Dose: {factorDose.toFixed(2)} IU
+      {result && (
+        <div>
+          <h4>{result.message}</h4>
+          <p>Target: {result.targetLevel}%</p>
+          <p>Required rise: {result.requiredRise}%</p>
+
+          {result.warning && <p style={{ color: "red" }}>{result.warning}</p>}
         </div>
       )}
     </form>
   );
 }
-

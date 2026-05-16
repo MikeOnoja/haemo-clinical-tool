@@ -1,85 +1,104 @@
-import { useState, useCallback } from "react";
-import { useSupabaseCRUD } from "../../hooks/useSupabaseCRUD";
-import { useAlertContext } from "../AlertProvider";
-import { useAuth } from "../AuthProvider";
-import { VALIDATION, CONSTANTS } from "../../utils/constants";
-import { primaryButton, inputStyle, resultStyle, spinnerStyle } from "../../styles/globals.css";
+import { useFFPDose } from "../../hooks/useFFPDose";
 
-interface FFPDoseEstimatorProps {
+import {
+  inputStyle,
+  primaryButton,
+  resultStyle,
+} from "../../styles/globals.css";
+
+interface Props {
   patientId: string;
 }
 
-export function FFPDoseEstimator({ patientId }: FFPDoseEstimatorProps) {
-  const [ffpWeight, setFfpWeight] = useState("");
-  const [ffpResult, setFfpResult] = useState<number | null>(null);
+export function FFPDoseEstimator({
+  patientId,
+}: Props) {
+  const {
+    weight,
+    setWeight,
 
-  const { loading, saveCase } = useSupabaseCRUD();
-  const { addAlert } = useAlertContext();
-  const { user } = useAuth();
+    inr,
+    setInr,
 
-  const calcFFP = useCallback(async () => {
-    const w = VALIDATION.parseNumeric(ffpWeight);
+    bleeding,
+    setBleeding,
 
-    if (w === null) {
-      addAlert("❌ Invalid input. Please enter a valid weight.", "error", {
-        dismissible: true,
-        autoClose: false,
-      });
-      return;
-    }
+    result,
 
-    const volume = w * CONSTANTS.FFP_MULTIPLIER;
-    setFfpResult(volume);
+    loading,
 
-    await saveCase(
-      "FFP",
-      { weight: w },
-      `Required Volume: ${volume.toFixed(0)} mL`,
-      user?.id || null,
-      patientId || null,
-      addAlert
-    );
-  }, [ffpWeight, addAlert, user?.id, patientId, saveCase]);
+    assess,
+  } = useFFPDose(patientId);
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); calcFFP(); }}>
-      <h3>FFP Volume Calculation</h3>
+    <div>
+      <h3>FFP Dose Estimator</h3>
 
-      <label style={{ display: "block", marginBottom: 8 }}>
-        Weight (kg):
+      <label>
+        Weight (kg)
+
         <input
-          placeholder="e.g., 70"
-          value={ffpWeight}
-          onChange={(e) => setFfpWeight(e.target.value)}
-          style={inputStyle}
           type="number"
-          inputMode="decimal"
-          aria-label="Patient weight in kilograms"
-          required
+          placeholder="e.g. 70"
+          value={weight}
+          onChange={(e) =>
+            setWeight(e.target.value)
+          }
+          style={inputStyle}
         />
       </label>
 
-      <button
-        type="submit"
-        style={{ ...primaryButton, opacity: loading ? 0.7 : 1 }}
-        disabled={loading}
-        aria-busy={loading}
+      <label>
+        INR
+
+        <input
+          type="number"
+          step="0.1"
+          placeholder="e.g. 2.5"
+          value={inr}
+          onChange={(e) =>
+            setInr(e.target.value)
+          }
+          style={inputStyle}
+        />
+      </label>
+
+      <label
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginTop: 12,
+        }}
       >
-        {loading ? (
-          <>
-            <span style={spinnerStyle} />
-            Saving...
-          </>
-        ) : (
-          "Calculate"
-        )}
+        <input
+          type="checkbox"
+          checked={bleeding}
+          onChange={(e) =>
+            setBleeding(e.target.checked)
+          }
+        />
+
+        Active bleeding
+      </label>
+
+      <br />
+
+      <button
+        onClick={assess}
+        style={primaryButton}
+        disabled={loading}
+      >
+        {loading
+          ? "Processing..."
+          : "Assess FFP"}
       </button>
 
-      {ffpResult !== null && (
-        <div style={resultStyle} role="status">
-          ✅ Required Volume: {ffpResult.toFixed(0)} mL
+      {result && (
+        <div style={resultStyle}>
+          {result}
         </div>
       )}
-    </form>
+    </div>
   );
 }

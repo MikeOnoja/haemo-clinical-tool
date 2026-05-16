@@ -1,95 +1,89 @@
-import { useState, useCallback } from "react";
-import { useSupabaseCRUD } from "../../hooks/useSupabaseCRUD";
-import { useAlertContext } from "../AlertProvider";
-import { useAuth } from "../AuthProvider";
-import { primaryButton, inputStyle, resultStyle, spinnerStyle } from "../../styles/globals.css";
+import { useState } from "react";
+import { useMTPManager } from "../../hooks/useMTPManager";
 
-interface MTPManagerProps {
-  patientId: string;
-}
+export function MTPManager({ patientId }: { patientId: string }) {
+  const { runMTP, result, loading } = useMTPManager();
 
-export function MTPManager({ patientId }: MTPManagerProps) {
-  const [mtpScenario, setMtpScenario] = useState("");
-  const [mtpDecision, setMtpDecision] = useState("");
+  const [form, setForm] = useState({
+    weight: 70,
+    activeBleeding: false,
+    trauma: false,
+    obstetric: false,
+    hb: 8,
+  });
 
-  const { loading, saveCase } = useSupabaseCRUD();
-  const { addAlert } = useAlertContext();
-  const { user } = useAuth();
-
-  const assessMTP = useCallback(async () => {
-    const scenario = mtpScenario.trim().toLowerCase();
-
-    if (!scenario) {
-      addAlert("ℹ️ Please enter a bleeding scenario", "info", { dismissible: true, autoClose: true });
-      return;
-    }
-
-    let result = "";
-
-    if (scenario.includes("trauma") || scenario.includes("massive")) {
-      result = "Activate MTP: PRBC + FFP + Platelets in balanced ratio (1:1:1).";
-    } else if (scenario.includes("obstetric") || scenario.includes("pph")) {
-      result = "PPH MTP: Start uterotonics + PRBC + FFP, consider tranexamic acid early.";
-    } else if (scenario.includes("gi bleed")) {
-      result = "GI bleed: PRBC first, then FFP guided by INR.";
-    } else {
-      addAlert("⚠️ Select a valid bleeding scenario (trauma, obstetric, GI bleed)", "warning", {
-        dismissible: true,
-        autoClose: true,
-      });
-      return;
-    }
-
-    setMtpDecision(result);
-    await saveCase(
-      "MTP",
-      { scenario },
-      result,
-      user?.id || null,
-      patientId || null,
-      addAlert
-    );
-  }, [mtpScenario, addAlert, user?.id, patientId, saveCase]);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await runMTP(form, patientId);
+  };
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); assessMTP(); }}>
-      <h3>Massive Transfusion Protocol</h3>
+    <form onSubmit={handleSubmit}>
+      <h3>Massive Transfusion Protocol (MTP)</h3>
 
-      <label style={{ display: "block", marginBottom: 8 }}>
-        Bleeding Scenario:
+      <input
+        type="number"
+        value={form.weight}
+        onChange={(e) =>
+          setForm({ ...form, weight: Number(e.target.value) })
+        }
+        placeholder="Weight"
+      />
+
+      <input
+        type="number"
+        value={form.hb}
+        onChange={(e) =>
+          setForm({ ...form, hb: Number(e.target.value) })
+        }
+        placeholder="Hb"
+      />
+
+      <label>
         <input
-          placeholder="e.g., trauma, obstetric, GI bleed"
-          value={mtpScenario}
-          onChange={(e) => setMtpScenario(e.target.value)}
-          style={inputStyle}
-          aria-label="Describe the bleeding scenario"
-          required
+          type="checkbox"
+          checked={form.activeBleeding}
+          onChange={(e) =>
+            setForm({ ...form, activeBleeding: e.target.checked })
+          }
         />
+        Active bleeding
       </label>
 
-      <p style={{ fontSize: 12, color: "#666", marginBottom: 12 }}>
-        Valid scenarios: trauma, massive, obstetric, PPH, GI bleed
-      </p>
+      <label>
+        <input
+          type="checkbox"
+          checked={form.trauma}
+          onChange={(e) =>
+            setForm({ ...form, trauma: e.target.checked })
+          }
+        />
+        Trauma
+      </label>
 
-      <button
-        type="submit"
-        style={{ ...primaryButton, opacity: loading ? 0.7 : 1 }}
-        disabled={loading}
-        aria-busy={loading}
-      >
-        {loading ? (
-          <>
-            <span style={spinnerStyle} />
-            Saving...
-          </>
-        ) : (
-          "Activate MTP"
-        )}
+      <label>
+        <input
+          type="checkbox"
+          checked={form.obstetric}
+          onChange={(e) =>
+            setForm({ ...form, obstetric: e.target.checked })
+          }
+        />
+        Obstetric
+      </label>
+
+      <button type="submit" disabled={loading}>
+        {loading ? "Processing..." : "Run MTP"}
       </button>
 
-      {mtpDecision && (
-        <div style={resultStyle} role="status">
-          {mtpDecision}
+      {result && (
+        <div style={{ marginTop: 16 }}>
+          <h4>{result.pack}</h4>
+          <p>{result.message}</p>
+          <p>RBC: {result.rbcUnits}</p>
+          <p>FFP: {result.ffpUnits}</p>
+          <p>Platelets: {result.plateletUnits}</p>
+          <p>Cryo: {result.cryoUnits}</p>
         </div>
       )}
     </form>
