@@ -1,72 +1,28 @@
-import { useState, useCallback } from "react";
-
+import { useState } from "react";
+import { useClinicalWorkflow } from "./core/useClinicalWorkflow";
 import { assessFFPLogic } from "../domain/hematology/ffp.engine";
-
-import { useSupabaseCRUD } from "./useSupabaseCRUD";
-
-import { useAlertContext } from "../components/AlertProvider";
-
-import { useAuth } from "../components/AuthProvider";
+import type { FFPInput } from "../domain/hematology/ffp.engine";
 
 export function useFFPDose(patientId: string) {
   const [weight, setWeight] = useState("");
   const [inr, setInr] = useState("");
   const [bleeding, setBleeding] = useState(false);
 
-  const [result, setResult] = useState("");
+  const workflow = useClinicalWorkflow<FFPInput>({
+    module: "FFP_DOSE",
+    compute: assessFFPLogic,
+  });
 
-  const { loading, saveCase } =
-    useSupabaseCRUD();
-
-  const { addAlert } = useAlertContext();
-
-  const { user } = useAuth();
-
-  const assess = useCallback(async () => {
-    const parsedWeight = parseFloat(weight);
-
-    const parsedInr = parseFloat(inr);
-
-    if (
-      isNaN(parsedWeight) ||
-      isNaN(parsedInr)
-    ) {
-      setResult(
-        "❌ Invalid weight or INR value"
-      );
-
-      return;
-    }
-
-    const decision = assessFFPLogic({
-      weight: parsedWeight,
-      inr: parsedInr,
-      bleeding,
-    });
-
-    setResult(decision);
-
-    await saveCase(
-      "FFP",
+  const assess = async () => {
+    await workflow.run(
       {
-        weight: parsedWeight,
-        inr: parsedInr,
+        weight: Number(weight),
+        inr: Number(inr),
         bleeding,
       },
-      decision,
-      user?.id || null,
-      patientId || null,
-      addAlert
+      patientId
     );
-  }, [
-    weight,
-    inr,
-    bleeding,
-    saveCase,
-    addAlert,
-    user?.id,
-    patientId,
-  ]);
+  };
 
   return {
     weight,
@@ -78,9 +34,8 @@ export function useFFPDose(patientId: string) {
     bleeding,
     setBleeding,
 
-    result,
-
-    loading,
+    result: workflow.result,
+    loading: workflow.loading,
 
     assess,
   };

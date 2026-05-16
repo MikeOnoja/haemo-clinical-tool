@@ -1,15 +1,22 @@
 import { useState } from "react";
 import { useMTPManager } from "../../hooks/useMTPManager";
 
+import { ClinicalInput } from "../clinical-ui/ClinicalInput";
+import { ClinicalSelect } from "../clinical-ui/ClinicalSelect";
+import { ClinicalButton } from "../clinical-ui/ClinicalButton";
+import { ResultPanel } from "../clinical-ui/ResultPanel";
+import { LoadingOverlay } from "../clinical-ui/LoadingOverlay";
+
 export function MTPManager({ patientId }: { patientId: string }) {
   const { runMTP, result, loading } = useMTPManager();
 
   const [form, setForm] = useState({
     weight: 70,
+    hb: 8,
     activeBleeding: false,
     trauma: false,
     obstetric: false,
-    hb: 8,
+    shock: "stable",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -21,23 +28,34 @@ export function MTPManager({ patientId }: { patientId: string }) {
     <form onSubmit={handleSubmit}>
       <h3>Massive Transfusion Protocol (MTP)</h3>
 
-      <input
+      <ClinicalInput
         type="number"
         value={form.weight}
         onChange={(e) =>
           setForm({ ...form, weight: Number(e.target.value) })
         }
-        placeholder="Weight"
+        placeholder="Weight (kg)"
       />
 
-      <input
+      <ClinicalInput
         type="number"
         value={form.hb}
         onChange={(e) =>
           setForm({ ...form, hb: Number(e.target.value) })
         }
-        placeholder="Hb"
+        placeholder="Hb (g/dL)"
       />
+
+      <ClinicalSelect
+        value={form.shock}
+        onChange={(e) =>
+          setForm({ ...form, shock: e.target.value })
+        }
+      >
+        <option value="stable">Stable</option>
+        <option value="compensated">Compensated shock</option>
+        <option value="decompensated">Decompensated shock</option>
+      </ClinicalSelect>
 
       <label>
         <input
@@ -72,19 +90,30 @@ export function MTPManager({ patientId }: { patientId: string }) {
         Obstetric
       </label>
 
-      <button type="submit" disabled={loading}>
-        {loading ? "Processing..." : "Run MTP"}
-      </button>
+      <ClinicalButton type="submit" disabled={loading}>
+        Run MTP Protocol
+      </ClinicalButton>
+
+      {loading && <LoadingOverlay />}
 
       {result && (
-        <div style={{ marginTop: 16 }}>
-          <h4>{result.pack}</h4>
+        <ResultPanel>
+          {typeof result === "string" ? (
+            <p>{result}</p>
+          ) : (
+            <>
+              <h4>{result.title}</h4>
           <p>{result.message}</p>
-          <p>RBC: {result.rbcUnits}</p>
-          <p>FFP: {result.ffpUnits}</p>
-          <p>Platelets: {result.plateletUnits}</p>
-          <p>Cryo: {result.cryoUnits}</p>
-        </div>
+
+          <hr />
+
+          <p>🩸 RBC: {result.rbcUnits} units</p>
+          <p>🧪 FFP: {result.ffpUnits} units</p>
+          <p>🟡 Platelets: {result.plateletUnits}</p>
+          <p>❄ Cryoprecipitate: {result.cryoUnits}</p>
+          </>
+          )}
+        </ResultPanel>
       )}
     </form>
   );

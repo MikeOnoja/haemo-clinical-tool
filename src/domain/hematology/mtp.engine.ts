@@ -1,3 +1,5 @@
+import type { ClinicalResult } from "../../types/clinical";
+
 export interface MTPInput {
   weight: number;
   activeBleeding: boolean;
@@ -6,16 +8,7 @@ export interface MTPInput {
   hb: number;
 }
 
-export interface MTPResult {
-  pack: string;
-  rbcUnits: number;
-  ffpUnits: number;
-  plateletUnits: number;
-  cryoUnits: number;
-  message: string;
-}
-
-export function calculateMTP(input: MTPInput): MTPResult {
+export function calculateMTP(input: MTPInput): ClinicalResult {
   const severity =
     (input.activeBleeding ? 2 : 0) +
     (input.trauma ? 2 : 0) +
@@ -24,32 +17,35 @@ export function calculateMTP(input: MTPInput): MTPResult {
 
   if (severity >= 4) {
     return {
-      pack: "MTP ACTIVATED - MASSIVE BLEEDING PROTOCOL",
+      title: "MTP Activated",
+      message: "Massive transfusion protocol required",
+      severity: "critical",
       rbcUnits: 6,
       ffpUnits: 6,
       plateletUnits: 1,
-      cryoUnits: 10,
-      message: "Activate full MTP pack 1 immediately",
+      actions: ["Activate MTP immediately"],
     };
   }
 
   if (severity >= 2) {
     return {
-      pack: "MTP STANDBY",
+      title: "MTP Standby",
+      message: "Prepare blood products",
+      severity: "moderate",
       rbcUnits: 3,
       ffpUnits: 3,
       plateletUnits: 1,
-      cryoUnits: 5,
-      message: "Prepare blood products, monitor closely",
+      actions: ["Prepare units", "Monitor patient"],
     };
   }
 
   return {
-    pack: "NO MTP REQUIRED",
+    title: "No MTP Required",
+    message: "Supportive care only",
+    severity: "low",
     rbcUnits: 0,
     ffpUnits: 0,
     plateletUnits: 0,
-    cryoUnits: 0,
-    message: "Supportive care only",
+    actions: ["Observe"],
   };
 }

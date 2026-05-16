@@ -1,4 +1,4 @@
-// src/domain/hematology/factor8.engine.ts
+import type { ClinicalResult } from "../../types/clinical";
 
 export type Factor8Scenario =
   | "no_bleed"
@@ -13,17 +13,6 @@ export type Factor8Input = {
   scenario: Factor8Scenario;
 };
 
-export type Factor8Result = {
-  doseIU: number;
-  targetLevel: number;
-  requiredRise: number;
-  message: string;
-  warning?: string;
-};
-
-/**
- * Clinical target mapping (haemophilia protocols)
- */
 const TARGET_LEVEL_MAP: Record<Factor8Scenario, number> = {
   no_bleed: 5,
   minor_bleed: 30,
@@ -32,56 +21,59 @@ const TARGET_LEVEL_MAP: Record<Factor8Scenario, number> = {
   major_surgery: 100,
 };
 
-/**
- * Factor VIII dosing:
- * IU = weight × required rise × 0.5
- */
-export function calculateFactor8(input: Factor8Input): Factor8Result {
+export function calculateFactor8(input: Factor8Input): ClinicalResult {
   const { weightKg, currentLevel, scenario } = input;
 
   if (!weightKg || weightKg <= 0) {
     return {
-      doseIU: 0,
-      targetLevel: 0,
-      requiredRise: 0,
+      title: "Factor VIII Calculation Error",
       message: "Invalid weight input",
+      severity: "high",
       warning: "Weight must be greater than 0",
+      actions: [],
     };
   }
 
   const targetLevel = TARGET_LEVEL_MAP[scenario];
   const requiredRise = Math.max(targetLevel - currentLevel, 0);
-
   const doseIU = Math.round(weightKg * requiredRise * 0.5);
 
-  let message = "";
-  let warning = undefined;
+  let severity: ClinicalResult["severity"] = "low";
+  let actions: string[] = [];
 
   switch (scenario) {
     case "no_bleed":
-      message = "Prophylaxis or no immediate replacement required";
+      actions = ["No immediate treatment required"];
       break;
+
     case "minor_bleed":
-      message = `Treat minor bleed → target ~${targetLevel}% FVIII`;
+      actions = [`Treat minor bleed to target ${targetLevel}%`];
       break;
+
     case "major_bleed":
-      message = `EMERGENCY: Major bleed → immediate correction to ~${targetLevel}%`;
-      warning = "Urgent hematology intervention required";
+      severity = "critical";
+      actions = [`URGENT: correct to ${targetLevel}% immediately`];
       break;
+
     case "minor_surgery":
-      message = `Pre-op cover for minor procedure → target ~${targetLevel}%`;
+      actions = [`Pre-op cover target ${targetLevel}%`];
       break;
+
     case "major_surgery":
-      message = `Pre-op cover for major surgery → maintain ~${targetLevel}%`;
-      warning = "Requires perioperative factor monitoring";
+      severity = "high";
+      actions = [`Maintain ${targetLevel}% perioperatively`];
       break;
   }
 
   return {
-    doseIU,
-    targetLevel,
-    requiredRise,
-    message: `Give ~${doseIU} IU Factor VIII. ${message}`,
-    warning,
+    title: "Factor VIII Dose Calculation",
+    message: `Give ~${doseIU} IU Factor VIII`,
+    severity,
+    indication: scenario,
+    actions: [`Dose: ${doseIU} IU`, ...actions],
+    warning:
+      scenario === "major_bleed"
+        ? "Urgent hematology intervention required"
+        : undefined,
   };
 }

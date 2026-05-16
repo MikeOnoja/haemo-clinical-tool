@@ -8,7 +8,7 @@ import { Header } from "./components/Header";
 import { AlertContainer } from "./components/AlertContainer";
 import { TabNavigation } from "./components/TabNavigation";
 
-import { Factor8Calculator } from "./components/medical-modules/Factor8Calculator";
+import { Factor8Calculator } from "./components/medical-modules/Factor8Calculator"
 import { PlateletDecision } from "./components/medical-modules/PlateletDecision";
 import { FFPDoseEstimator } from "./components/medical-modules/FFPDoseEstimator";
 import { INRReversal } from "./components/medical-modules/INRReversal";

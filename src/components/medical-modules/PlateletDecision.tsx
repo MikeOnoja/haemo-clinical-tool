@@ -1,5 +1,10 @@
 import { usePlateletDecision } from "../../hooks/usePlateletDecision";
-import { inputStyle, primaryButton, resultStyle } from "../../styles/globals.css";
+
+import { ClinicalInput } from "../clinical-ui/ClinicalInput";
+import { ClinicalButton } from "../clinical-ui/ClinicalButton";
+import { ClinicalCheckbox } from "../clinical-ui/ClinicalCheckbox";
+import { ResultPanel } from "../clinical-ui/ResultPanel";
+import { LoadingOverlay } from "../clinical-ui/LoadingOverlay";
 
 interface Props {
   patientId: string;
@@ -22,42 +27,67 @@ export function PlateletDecision({ patientId }: Props) {
 
   return (
     <div>
-      <h3>Platelet Transfusion Decision</h3>
+      <h3>Platelet Transfusion Decision Engine</h3>
 
-      <input
+      <ClinicalInput
         type="number"
         placeholder="Platelet count"
         value={plateletCount}
         onChange={(e) => setPlateletCount(e.target.value)}
-        style={inputStyle}
       />
 
-      <label>
-        <input type="checkbox" checked={bleeding} onChange={(e) => setBleeding(e.target.checked)} />
-        Active bleeding
-      </label>
+      <ClinicalCheckbox
+        label="Active bleeding"
+        checked={bleeding}
+        onChange={(e) => setBleeding(e.target.checked)}
+      />
 
-      <br />
+      <ClinicalCheckbox
+        label="Planned procedure"
+        checked={procedure}
+        onChange={(e) => setProcedure(e.target.checked)}
+      />
 
-      <label>
-        <input type="checkbox" checked={procedure} onChange={(e) => setProcedure(e.target.checked)} />
-        Planned procedure
-      </label>
+      <ClinicalCheckbox
+        label="Oncology patient"
+        checked={oncology}
+        onChange={(e) => setOncology(e.target.checked)}
+      />
 
-      <br />
+      <ClinicalButton onClick={assess} disabled={loading}>
+        Assess Platelet Requirement
+      </ClinicalButton>
 
-      <label>
-        <input type="checkbox" checked={oncology} onChange={(e) => setOncology(e.target.checked)} />
-        Oncology patient
-      </label>
+      {loading && <LoadingOverlay />}
 
-      <br /><br />
+      {result && (
+        <ResultPanel>
+          {typeof result === "string" ? (
+            <p>{result}</p>
+          ) : (
+            <>
+              <h4>{result.title}</h4>
+              <p>{result.message}</p>
 
-      <button onClick={assess} style={primaryButton} disabled={loading}>
-        {loading ? "Processing..." : "Assess Platelets"}
-      </button>
+              <hr />
 
-      {result && <div style={resultStyle}>{result}</div>}
+              <p>🧠 Severity: {result.severity}</p>
+              <p>📊 Indication: {result.indication}</p>
+
+              <p>💉 Recommendation:</p>
+              <ul>
+                {result.actions?.map((a: string, i: number) => (
+                  <li key={i}>{a}</li>
+                ))}
+              </ul>
+
+              {result.warning && (
+                <p style={{ color: "red" }}>{result.warning}</p>
+              )}
+            </>
+          )}
+        </ResultPanel>
+      )}
     </div>
   );
 }

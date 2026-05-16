@@ -2,6 +2,12 @@
   --text: #6b6375;
   --text-h: #08060d;
   --bg: #eef2f6;
+
+  /* ADD THESE ↓↓↓ */
+  --surface: #ffffff;
+  --surface-text: #08060d;
+  --surface-border: #e5e4e7;
+
   --border: #e5e4e7;
   --code-bg: #f4f3ec;
   --accent: #aa3bff;
@@ -92,4 +98,15 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+}
+
+:root[data-theme="dark"] {
+  --text: #e5e7eb;
+  --text-h: #ffffff;
+  --bg: #0b0f14;
+
+  /* ADD SURFACE DARK MODE */
+  --surface: #111827;
+  --surface-text: #f9fafb;
+  --surface-border: #374151;
 }

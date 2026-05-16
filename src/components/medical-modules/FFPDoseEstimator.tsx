@@ -1,103 +1,83 @@
 import { useFFPDose } from "../../hooks/useFFPDose";
 
-import {
-  inputStyle,
-  primaryButton,
-  resultStyle,
-} from "../../styles/globals.css";
+import { ClinicalInput } from "../clinical-ui/ClinicalInput";
+import { ClinicalButton } from "../clinical-ui/ClinicalButton";
+import { ClinicalCheckbox } from "../clinical-ui/ClinicalCheckbox";
+import { ResultPanel } from "../clinical-ui/ResultPanel";
+import { LoadingOverlay } from "../clinical-ui/LoadingOverlay";
 
 interface Props {
   patientId: string;
 }
 
-export function FFPDoseEstimator({
-  patientId,
-}: Props) {
+export function FFPDoseEstimator({ patientId }: Props) {
   const {
     weight,
     setWeight,
-
     inr,
     setInr,
-
     bleeding,
     setBleeding,
-
     result,
-
     loading,
-
     assess,
   } = useFFPDose(patientId);
 
   return (
     <div>
-      <h3>FFP Dose Estimator</h3>
+      <h3>FFP Coagulation Intelligence Engine</h3>
 
-      <label>
-        Weight (kg)
+      <ClinicalInput
+        type="number"
+        placeholder="Weight (kg)"
+        value={weight}
+        onChange={(e) => setWeight(e.target.value)}
+      />
 
-        <input
-          type="number"
-          placeholder="e.g. 70"
-          value={weight}
-          onChange={(e) =>
-            setWeight(e.target.value)
-          }
-          style={inputStyle}
-        />
-      </label>
+      <ClinicalInput
+        type="number"
+        step="0.1"
+        placeholder="INR"
+        value={inr}
+        onChange={(e) => setInr(e.target.value)}
+      />
 
-      <label>
-        INR
+      <ClinicalCheckbox
+        checked={bleeding}
+        onChange={(e) => setBleeding(e.target.checked)}
+        label="Active bleeding"
+      />
 
-        <input
-          type="number"
-          step="0.1"
-          placeholder="e.g. 2.5"
-          value={inr}
-          onChange={(e) =>
-            setInr(e.target.value)
-          }
-          style={inputStyle}
-        />
-      </label>
+      <ClinicalButton onClick={assess} disabled={loading}>
+        Assess FFP Requirement
+      </ClinicalButton>
 
-      <label
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          marginTop: 12,
-        }}
-      >
-        <input
-          type="checkbox"
-          checked={bleeding}
-          onChange={(e) =>
-            setBleeding(e.target.checked)
-          }
-        />
-
-        Active bleeding
-      </label>
-
-      <br />
-
-      <button
-        onClick={assess}
-        style={primaryButton}
-        disabled={loading}
-      >
-        {loading
-          ? "Processing..."
-          : "Assess FFP"}
-      </button>
+      {loading && <LoadingOverlay />}
 
       {result && (
-        <div style={resultStyle}>
-          {result}
-        </div>
+        <ResultPanel>
+          {typeof result === "string" ? (
+            <p>{result}</p>
+          ) : (
+            <>
+              <h4>{result.title}</h4>
+          <p>{result.message}</p>
+
+          <hr />
+
+          <p>🧠 Severity: {result.severity}</p>
+          <p>📊 Indication: {result.indication}</p>
+
+          <p>💉 Dose:</p>
+          <ul>
+            <li>Units: {result.units}</li>
+            <li>Volume: {result.volumeMl} mL</li>
+          </ul>
+
+          <p>⏱ Urgency: {result.urgency}</p>
+            </>
+          )}
+        </ResultPanel>
       )}
     </div>
   );

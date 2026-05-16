@@ -1,33 +1,17 @@
-import { useState } from "react";
+import { useClinicalWorkflow } from "./core/useClinicalWorkflow";
+
 import { calculateMTP } from "../domain/hematology/mtp.engine";
-import { saveCase } from "../services/supabase/cases.service";
-import { useAuth } from "../components/AuthProvider";
+import type { MTPInput } from "../domain/hematology/mtp.engine";
 
 export function useMTPManager() {
-  const [result, setResult] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
-
-  const runMTP = async (input: any, patientId: string) => {
-    setLoading(true);
-
-    const analysis = calculateMTP(input);
-    setResult(analysis);
-
-    await saveCase({
-      module: "MTP",
-      inputData: input,
-      result: analysis.message,
-      userId: user?.id || null,
-      patientId: patientId || null,
-    });
-
-    setLoading(false);
-  };
+  const workflow = useClinicalWorkflow<MTPInput>({
+    module: "MTP",
+    compute: calculateMTP,
+  });
 
   return {
-    result,
-    loading,
-    runMTP,
+    runMTP: workflow.run,
+    result: workflow.result,
+    loading: workflow.loading,
   };
 }

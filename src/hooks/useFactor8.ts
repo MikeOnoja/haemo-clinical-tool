@@ -1,22 +1,17 @@
-import { useState, useCallback } from "react";
-import {
-  calculateFactor8,
-  type Factor8Input,
-  type Factor8Result,
-} from "../domain/hematology/factor8.engine";
+import { useClinicalWorkflow } from "./core/useClinicalWorkflow";
+import { calculateFactor8 } from "../domain/hematology/factor8.engine";
 
-export function useFactor8() {
-  const [result, setResult] = useState<Factor8Result | null>(null);
-  const [loading, setLoading] = useState(false);
+export function useFactor8(patientId: string) {
+  const workflow = useClinicalWorkflow({
+    module: "FACTOR8",
+    compute: calculateFactor8,
+  });
 
-  const calculate = useCallback((input: Factor8Input) => {
-    setLoading(true);
+  const calculate = (input: any) => workflow.run(input, patientId);
 
-    const res = calculateFactor8(input);
-
-    setResult(res);
-    setLoading(false);
-  }, []);
-
-  return { result, loading, calculate };
+  return {
+    run: calculate,
+    result: workflow.result,
+    loading: workflow.loading,
+  };
 }

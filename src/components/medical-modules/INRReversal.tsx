@@ -1,5 +1,9 @@
 import { useINRReversal } from "../../hooks/useINRReversal";
-import { inputStyle, primaryButton, resultStyle } from "../../styles/globals.css";
+
+import { ClinicalInput } from "../clinical-ui/ClinicalInput";
+import { ClinicalButton } from "../clinical-ui/ClinicalButton";
+import { ResultPanel } from "../clinical-ui/ResultPanel";
+import { LoadingOverlay } from "../clinical-ui/LoadingOverlay";
 
 interface Props {
   patientId: string;
@@ -20,13 +24,12 @@ export function INRReversal({ patientId }: Props) {
 
   return (
     <div>
-      <h3>INR Reversal Assessment</h3>
+      <h3>Anticoagulant Reversal Engine</h3>
 
-      <input
+      <ClinicalInput
         placeholder="INR value"
         value={inr}
         onChange={(e) => setInr(e.target.value)}
-        style={inputStyle}
         type="number"
       />
 
@@ -52,18 +55,35 @@ export function INRReversal({ patientId }: Props) {
 
       <br /><br />
 
-      <button
-        onClick={assessINR}
-        style={primaryButton}
-        disabled={loading}
-      >
-        {loading ? "Processing..." : "Assess INR"}
-      </button>
+      <ClinicalButton onClick={assessINR} disabled={loading}>
+        Assess Anticoagulation Status
+      </ClinicalButton>
+
+      {loading && <LoadingOverlay />}
 
       {result && (
-        <div style={resultStyle}>
-          {result}
-        </div>
+        <ResultPanel>
+          {typeof result === "string" ? (
+            <p>{result}</p>
+          ) : (
+            <>
+              <h4>{result.title}</h4>
+          <p>{result.message}</p>
+
+          <hr />
+
+          <p>🧠 Risk: {result.riskLevel}</p>
+          <p>⏱ Timing: {result.urgency}</p>
+
+          <p>💊 Recommended action:</p>
+          <ul>
+            {result.actions?.map((a: string, i: number) => (
+              <li key={i}>{a}</li>
+            ))}
+          </ul>
+            </>
+          )}
+        </ResultPanel>
       )}
     </div>
   );

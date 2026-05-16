@@ -1,8 +1,14 @@
 import { useState } from "react";
 import { useFactor8 } from "../../hooks/useFactor8";
 
-export function Factor8Calculator({ patientId: _patientId }: { patientId: string }) {
-  const { result, calculate, loading } = useFactor8();
+import { ClinicalInput } from "../clinical-ui/ClinicalInput";
+import { ClinicalSelect } from "../clinical-ui/ClinicalSelect";
+import { ClinicalButton } from "../clinical-ui/ClinicalButton";
+import { ResultPanel } from "../clinical-ui/ResultPanel";
+import { LoadingOverlay } from "../clinical-ui/LoadingOverlay";
+
+export function Factor8Calculator({ patientId }: { patientId: string }) {
+  const { result, loading, run } = useFactor8(patientId);
 
   const [weightKg, setWeightKg] = useState("");
   const [currentLevel, setCurrentLevel] = useState("");
@@ -14,7 +20,7 @@ export function Factor8Calculator({ patientId: _patientId }: { patientId: string
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    calculate({
+    run({
       weightKg: Number(weightKg),
       currentLevel: Number(currentLevel),
       scenario,
@@ -25,19 +31,19 @@ export function Factor8Calculator({ patientId: _patientId }: { patientId: string
     <form onSubmit={handleSubmit}>
       <h3>Factor VIII Clinical Dosing</h3>
 
-      <input
+      <ClinicalInput
         placeholder="Weight (kg)"
         value={weightKg}
         onChange={(e) => setWeightKg(e.target.value)}
       />
 
-      <input
+      <ClinicalInput
         placeholder="Current FVIII level (%)"
         value={currentLevel}
         onChange={(e) => setCurrentLevel(e.target.value)}
       />
 
-      <select
+      <ClinicalSelect
         value={scenario}
         onChange={(e) => setScenario(e.target.value as any)}
       >
@@ -46,20 +52,24 @@ export function Factor8Calculator({ patientId: _patientId }: { patientId: string
         <option value="major_bleed">Major bleeding</option>
         <option value="minor_surgery">Minor surgery</option>
         <option value="major_surgery">Major surgery</option>
-      </select>
+      </ClinicalSelect>
 
-      <button type="submit" disabled={loading}>
+      <ClinicalButton type="submit" disabled={loading}>
         Calculate
-      </button>
+      </ClinicalButton>
+
+      {loading && <LoadingOverlay />}
 
       {result && (
-        <div>
+        <ResultPanel>
           <h4>{result.message}</h4>
           <p>Target: {result.targetLevel}%</p>
           <p>Required rise: {result.requiredRise}%</p>
 
-          {result.warning && <p style={{ color: "red" }}>{result.warning}</p>}
-        </div>
+          {result.warning && (
+            <p style={{ color: "red" }}>{result.warning}</p>
+          )}
+        </ResultPanel>
       )}
     </form>
   );

@@ -1,31 +1,62 @@
+import type { ClinicalResult } from "../../types/clinical";
+
 export interface FFPInput {
   weight: number;
   inr: number;
   bleeding: boolean;
 }
 
-export function assessFFPLogic(
-  input: FFPInput
-): string {
+export function assessFFPLogic(input: FFPInput): ClinicalResult {
   const { weight, inr, bleeding } = input;
 
   if (weight <= 0 || weight > 300) {
-    return "🚨 Invalid body weight";
+    return {
+      title: "FFP Error",
+      message: "Invalid body weight",
+      severity: "high",
+    };
   }
 
   if (inr <= 0 || inr > 20) {
-    return "🚨 Invalid INR value";
+    return {
+      title: "FFP Error",
+      message: "Invalid INR value",
+      severity: "high",
+    };
   }
 
   const estimatedDose = Math.round(weight * 15);
 
   if (bleeding && inr >= 1.5) {
-    return `⚠️ Recommended FFP dose: ${estimatedDose} mL`;
+    return {
+      title: "FFP Indicated",
+      message: `Bleeding with elevated INR`,
+      severity: "high",
+      indication: "Active bleeding",
+      units: estimatedDose,
+      volumeMl: estimatedDose,
+      urgency: "urgent",
+      actions: ["Give FFP immediately"],
+    };
   }
 
   if (inr >= 2.0) {
-    return `⚠️ Consider FFP: estimated dose ${estimatedDose} mL`;
+    return {
+      title: "FFP Consideration",
+      message: "Moderate INR elevation",
+      severity: "moderate",
+      indication: "Coagulopathy",
+      units: estimatedDose,
+      volumeMl: estimatedDose,
+      urgency: "semi-urgent",
+      actions: ["Consider FFP"],
+    };
   }
 
-  return "✅ FFP not currently indicated";
+  return {
+    title: "No FFP Required",
+    message: "Coagulation acceptable",
+    severity: "low",
+    actions: ["Observe only"],
+  };
 }

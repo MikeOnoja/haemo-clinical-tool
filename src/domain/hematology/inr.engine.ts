@@ -1,31 +1,57 @@
+import type { ClinicalResult } from "../../types/clinical";
+
 export interface INRInput {
   inr: number;
   bleeding: boolean;
   urgentProcedure: boolean;
 }
 
-export function assessINRLogic(input: INRInput): string {
+export function assessINRLogic(input: INRInput): ClinicalResult {
   const { inr, bleeding, urgentProcedure } = input;
 
-  // Safety guard
   if (inr <= 0 || inr > 20) {
-    return "🚨 CRITICAL ERROR: INR value out of physiological range";
+    return {
+      title: "INR Error",
+      message: "Invalid INR range",
+      severity: "high",
+    };
   }
 
-  // Emergency bleeding scenario
   if (inr >= 5 && bleeding) {
-    return "🚨 URGENT: Administer PCC + Vitamin K immediately";
+    return {
+      title: "Critical INR",
+      message: "Life-threatening anticoagulation",
+      severity: "critical",
+      riskLevel: "high",
+      urgency: "immediate",
+      actions: ["PCC", "Vitamin K"],
+    };
   }
 
-  // High INR without bleeding
   if (inr >= 5) {
-    return "⚠️ High INR: consider holding anticoagulant ± Vitamin K";
+    return {
+      title: "High INR",
+      message: "Severely elevated INR",
+      severity: "high",
+      riskLevel: "moderate",
+      actions: ["Hold anticoagulant", "Vitamin K"],
+    };
   }
 
-  // Moderate risk with procedure
   if (inr >= 2 && urgentProcedure) {
-    return "⚠️ Moderate INR: consider reversal prior to procedure";
+    return {
+      title: "Procedure Risk INR",
+      message: "Moderate elevation before procedure",
+      severity: "moderate",
+      urgency: "pre-op",
+      actions: ["Consider reversal"],
+    };
   }
 
-  return "✅ No reversal required at this time";
+  return {
+    title: "Normal INR",
+    message: "No reversal required",
+    severity: "low",
+    actions: ["No action"],
+  };
 }
